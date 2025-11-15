@@ -1,61 +1,95 @@
-import 'package:expensetracker/screens/homescreen.dart';
+import 'package:expensetracker/provider/expenseProvider.dart';
 import 'package:expensetracker/widgets/addTransactioncard.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../model/expenseModel.dart';
 
-class EditExpense extends StatefulWidget {
-  const EditExpense({super.key});
+class EditExpense extends ConsumerStatefulWidget {
+  final int id;
+  const EditExpense({super.key, required this.id});
 
   @override
-  State<EditExpense> createState() => _EditExpenseState();
+  ConsumerState<EditExpense> createState() => _EditExpenseState();
 }
 
-class _EditExpenseState extends State<EditExpense> {
- 
- TextEditingController title=TextEditingController();
-  TextEditingController amount=TextEditingController();
-   TextEditingController category=TextEditingController();
-    TextEditingController date=TextEditingController();
+class _EditExpenseState extends ConsumerState<EditExpense> {
+  final title = TextEditingController();
+  final amount = TextEditingController();
+  final category = TextEditingController();
+  final date = TextEditingController();
+
+  ExpenseModel? expense;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔥 Load initial data only ONCE
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final list = ref.read(expenseProvider);
+      expense = list.firstWhere((e) => e.id == widget.id);
+
+      title.text = expense!.title;
+      amount.text = expense!.amount.toString();
+      category.text = expense!.category;
+      date.text = DateFormat("dd/MM/yyyy").format(expense!.date);
+
+      setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: InkWell(
-          onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context)=>Homescreen()));
-          },
-          child: Icon(Icons.arrow_back, size: 20)),
-        centerTitle: true,
-        title: Text(
-          "Edit Transaction",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: InkWell(
-              onTap: () {
-                
-              },
-              child: Text(
-                "Save",
-                style: TextStyle(fontSize: 18, color: Colors.blue),
-              ),
-            ),
-          ),
-        ],
+        title: Text("Edit Transaction"),
       ),
 
-      body:  Addtransactioncard(
-                title: title,
-                amount: amount, 
-                category: category, 
-                date:  date, 
-                onpressedin: () { 
-                  print("Hello");
-                 }, 
-                textButton: 'Edit',),
+      body: Addtransactioncard(
+        title: title,
+        amount: amount,
+        category: category,
+        date: date,
+        textButton: "Save",
+        onpressedin: () {
+          if (title.text.isEmpty ||
+              amount.text.isEmpty ||
+              category.text.isEmpty ||
+              date.text.isEmpty) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text("Fill all fields")));
+            return;
+          }
+
+          double? amt = double.tryParse(amount.text);
+          if (amt == null) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text("Invalid amount")));
+            return;
+          }
+
+          DateTime parsedDate;
+          try {
+            parsedDate = DateFormat("dd/MM/yyyy").parse(date.text);
+          } catch (_) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text("Invalid date")));
+            return;
+          }
+
+          // 🔥 UPDATE
+          ref.read(expenseProvider.notifier).updateExpense(
+                widget.id,
+                title.text,
+                amt,
+                category.text,
+                parsedDate,
+              );
+
+          Navigator.pop(context);
+        },
+      ),
     );
   }
 }

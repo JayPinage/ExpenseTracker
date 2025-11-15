@@ -1,6 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:expensetracker/database/expensedb.dart';
 import 'package:expensetracker/model/expenseModel.dart';
-import 'package:riverpod/legacy.dart';
+
 
 class Expenseprovider extends StateNotifier<List<ExpenseModel>> {
   Expenseprovider() : super([]) {
@@ -9,9 +10,7 @@ class Expenseprovider extends StateNotifier<List<ExpenseModel>> {
 
   Future<void> loaddata() async {
     final db = await Dbhelper.instance();
-
     final data = await db.query('expense');
-
     state = data.map((e) => ExpenseModel.fromMap(e)).toList();
   }
 
@@ -27,18 +26,16 @@ class Expenseprovider extends StateNotifier<List<ExpenseModel>> {
       "title": title,
       "amount": amount,
       "category": category,
-      "date": date,
+      "date": date.toIso8601String(),
     });
 
-    loaddata();
+    await loaddata();
   }
 
   Future<void> deleteExpense(int id) async {
     final db = await Dbhelper.instance();
-
     await db.delete("expense", where: "id=?", whereArgs: [id]);
-
-    loaddata();
+    await loaddata();
   }
 
   Future<void> updateExpense(
@@ -52,12 +49,38 @@ class Expenseprovider extends StateNotifier<List<ExpenseModel>> {
 
     await db.update(
       "expense",
-      {"title": title, "amount": amount, "category": category, "date": date},
+      {
+        "title": title,
+        "amount": amount,
+        "category": category,
+        "date": date.toIso8601String(),
+      },
       where: "id=?",
       whereArgs: [id],
     );
+
+    await loaddata();
   }
+
+  double get totalExpense {
+  return state.fold(0, (sum, item) => sum + item.amount);
 }
 
 
-final expenseProvider=StateNotifierProvider<Expenseprovider,List<ExpenseModel>>((ref)=>Expenseprovider());
+}
+
+final expenseProvider =
+    StateNotifierProvider<Expenseprovider, List<ExpenseModel>>(
+  (ref) => Expenseprovider(),
+);
+
+
+final totalExpenseProvider = Provider<double>((ref) {
+  final expenses = ref.watch(expenseProvider);
+
+  double total = 0;
+  for (var e in expenses) {
+    total += e.amount;
+  }
+  return total;
+});

@@ -1,3 +1,4 @@
+import 'package:expensetracker/provider/expenseProvider.dart';
 import 'package:expensetracker/screens/add_expense.dart';
 import 'package:expensetracker/screens/edit_expense.dart';
 import 'package:expensetracker/widgets/cardwidget.dart';
@@ -15,12 +16,16 @@ class Homescreen extends ConsumerStatefulWidget {
 class _HomescreenState extends ConsumerState<Homescreen> {
   @override
   Widget build(BuildContext context) {
+
+    final monthName = DateFormat.MMMM().format(DateTime.now()); 
+    final total = ref.watch(totalExpenseProvider);
+
+     final data=ref.watch(expenseProvider);
     return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
             // ---------------- HEADER ----------------
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -38,8 +43,7 @@ class _HomescreenState extends ConsumerState<Homescreen> {
                         MaterialPageRoute(builder: (context) => AddExpense()),
                       );
                     },
-                    icon: Icon(Icons.add_circle,
-                        size: 28, color: Colors.blue),
+                    icon: Icon(Icons.add_circle, size: 28, color: Colors.blue),
                   ),
                 ],
               ),
@@ -49,8 +53,8 @@ class _HomescreenState extends ConsumerState<Homescreen> {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Cardwidget(
-                amount: 5000,
-                month: DateFormat.MMMM().format(DateTime.now()),
+                amount: total,
+                month:monthName,
               ),
             ),
 
@@ -59,61 +63,82 @@ class _HomescreenState extends ConsumerState<Homescreen> {
             // ---------------- EXPENSE LIST ----------------
             Expanded(
               child: ListView.builder(
-                itemCount: 10,
+              
+                itemCount: data.length,
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 itemBuilder: (context, index) {
-                  return Card(
-                    margin: EdgeInsets.symmetric(vertical: 8),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  return Dismissible(
+                    key: ValueKey(data[index].id),
+                    direction: DismissDirection.endToStart,
+                    onDismissed: (direction) {
+                      ref.read(expenseProvider.notifier).deleteExpense(data[index].id!);
+                    },
+                    child: Card(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                 data[index].title,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                 DateFormat("d MMM").format(data[index].date), 
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color:Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    
+                            Spacer(),
+                    
+                          
+                    
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  "₹ ${data[index].amount}",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditExpense(id:data[index].id ?? 0,),
+                                      ),
+                                    );
+                                  },
+                                  icon: Icon(Icons.edit),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  child: Row(
-    children: [
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Grocery",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              )),
-          SizedBox(height: 6),
-          Text("12 Nov 2024",
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey,
-              )),
-        ],
-      ),
-
-      Spacer(),
-
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text("₹ 500",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              )),
-          SizedBox(height: 6),
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => EditExpense()),
-              );
-            },
-            icon: Icon(Icons.edit),
-          ),
-        ],
-      ),
-    ],
-  ),
-),
                   );
                 },
               ),

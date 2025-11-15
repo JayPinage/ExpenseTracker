@@ -22,7 +22,7 @@ class Addtransactioncard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 450,
+      height: 430,
       child: Card(
         color: Colors.white,
         child: Padding(
@@ -71,7 +71,7 @@ class Addtransactioncard extends StatelessWidget {
                 ),
               ),
 
-              SizedBox(height: 20),
+              SizedBox(height: 16),
 
               // DATE TEXTFIELD OPENS CALENDAR
               TextField(
@@ -97,7 +97,7 @@ class Addtransactioncard extends StatelessWidget {
                 },
               ),
 
-              SizedBox(height: 30),
+              SizedBox(height: 25),
 
               // BUTTON
               SizedBox(
